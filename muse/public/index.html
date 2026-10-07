@@ -129,19 +129,38 @@
       <section id="tab-library" class="tab page" hidden>
         <div class="page-head">
           <h1>Library</h1>
-          <button id="library-refresh" class="round small" aria-label="Refresh">
+          <button id="library-refresh" class="round small" aria-label="Refresh library">
             <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg>
           </button>
         </div>
-        <div id="library-list"></div>
+        <p class="muted">Your ads, reels, and everything you create.</p>
+        <label class="search library-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+          <input id="library-search" type="search" aria-label="Search library" placeholder="Search your creations…">
+        </label>
+        <div id="library-filters" class="library-filters" role="group" aria-label="Filter media"></div>
+        <div class="library-toolbar">
+          <span id="library-count" role="status" aria-live="polite"></span>
+          <select id="library-sort" aria-label="Sort library">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </div>
+        <p id="library-warning" class="muted" hidden></p>
+        <div id="library-list" aria-busy="false"></div>
+        <details class="library-system">
+          <summary>Agent notes</summary>
+          <div id="library-system" class="list"></div>
+        </details>
       </section>
     </main>
 
-    <nav class="tabbar">
-      <button data-tab="chat" class="on" aria-label="Chat"><svg viewBox="0 0 24 24"><path d="M12 4c4.7 0 8.5 3.1 8.5 7s-3.8 7-8.5 7c-1 0-2-.1-2.9-.4L5 19.5l1.1-3.6C4.5 14.6 3.5 12.9 3.5 11c0-3.9 3.8-7 8.5-7z"/></svg></button>
-      <button data-tab="ideas" aria-label="Ideas"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg></button>
-      <button data-tab="goals" aria-label="Goals"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg></button>
-      <button data-tab="library" aria-label="Library"><svg viewBox="0 0 24 24"><circle cx="7.5" cy="7.5" r="3.5"/><path d="M16.5 3.5l4 7h-8z"/><rect x="4" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="3.5"/></svg></button>
+    <nav class="tabbar" aria-label="Main navigation">
+      <button data-tab="chat" class="on" aria-label="Chat"><svg viewBox="0 0 24 24"><path d="M12 4c4.7 0 8.5 3.1 8.5 7s-3.8 7-8.5 7c-1 0-2-.1-2.9-.4L5 19.5l1.1-3.6C4.5 14.6 3.5 12.9 3.5 11c0-3.9 3.8-7 8.5-7z"/></svg><span>Chat</span></button>
+      <button data-tab="ideas" aria-label="Ideas"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg><span>Ideas</span></button>
+      <button data-tab="goals" aria-label="Goals"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg><span>Goals</span></button>
+      <button data-tab="library" aria-label="Library"><svg viewBox="0 0 24 24"><circle cx="7.5" cy="7.5" r="3.5"/><path d="M16.5 3.5l4 7h-8z"/><rect x="4" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="3.5"/></svg><span>Library</span></button>
     </nav>
 
     <div id="banner" class="banner" hidden></div>

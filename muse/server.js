@@ -1,3 +1,6 @@
+import { LIBRARY_DIR, validLibraryName, listLibrary, resolveLibraryFile } from './library.js';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 // muse server: a Muse-style personal agent app, and the only place the Agent37 key lives.
 //
 // Every visitor gets their own agent instance. The browser holds a signed cookie, never an
@@ -65,7 +68,6 @@ const SOUL_PATH = '~/.hermes/SOUL.md';
 const MEMORY_DIR = '~/.hermes/memories';
 const IDEAS_PATH = '~/muse/ideas.json';
 const GOALS_PATH = '~/muse/goals.json';
-const LIBRARY_DIR = '~/muse/library';
 const NOTIFY_PATH = '~/muse/notify.mjs';
 // Hermes keeps each memory file as entries joined by this delimiter, under a character cap.
 const MEMORY_FILES = {
@@ -253,11 +255,11 @@ async function writeText(id, filePath, text, { mtime, create } = {}) {
   return res.status;
 }
 
-async function listDir(id, dirPath) {
+async function listDir(id, dirPath, { metadata = false } = {}) {
   const { res, body } = await agent37(instanceUrl(id, `/v1/files?${new URLSearchParams({ path: dirPath })}`));
-  if (res.status === 404) return [];
+  if (res.status === 404) return metadata ? { entries: [], truncated: false } : [];
   if (!res.ok) throw new Error(`Listing ${dirPath} failed (HTTP ${res.status}).`);
-  return body.entries;
+  return metadata ? body : body.entries;
 }
 
 async function readJson(id, filePath) {
@@ -283,7 +285,7 @@ function soulBlock(user) {
     `${yourName} talks to you through an app with four tabs: Chat, Ideas, Goals and Library. The app reads these files directly, so keep them valid JSON and current:`,
     '- ~/muse/ideas.json holds your ideas for things you could take off their plate: {"updated":"<ISO time>","ideas":[{"emoji":"<one emoji>","title":"I can ...","detail":"<one or two sentences on why, citing what you know>","prompt":"<the message that starts it, written as the user>"}]}. A daily scheduled run rewrites it; you can also update it whenever a good idea comes up.',
     '- ~/muse/goals.json holds what you track for them: {"goals":[{"id":"<short-slug>","kind":"tracking|goal","title":"...","detail":"<one line: status or plan>","progress":<0-100>,"next_check_in":"<ISO time or null>","cron_id":"<id or null>"}]}. kind "tracking" is watching something in the world (a price, a reservation, a delivery); kind "goal" is something they are working toward.',
-    `- ~/muse/library/ is where everything you make for ${yourName} goes: documents (.md, .pdf, .csv), web pages as one self-contained .html file, images, audio, and video. Put finished reels, covers, and captions here, at most one subfolder deep, so they appear in the app. Use clear file names and mention the file in your reply.`,
+    `- ~/muse/library/ is where everything you make for ${yourName} goes: documents (.md, .pdf, .csv), web pages as one self-contained .html file, images, audio, and video. Put finished reels, covers, and captions here, organized in campaign subfolders (up to five folders deep), so they appear in the app. Use clear file names and mention the file in your reply.`,
     `When ${yourName} sets a goal or asks you to track something, add it to goals.json and schedule its check-ins yourself with agent37 cron (weekly for goals, daily at most for tracking), and store the cron id in cron_id. On each check-in, do the work, update progress, detail and next_check_in, and message them if there is news. When a goal is done or dropped, remove its cron.`,
     '',
     '# Corgi skills and tools',
@@ -771,41 +773,43 @@ app.get('/api/me/goals', requireAgent, route(async (req, res) => {
 }));
 
 app.get('/api/me/library', requireAgent, route(async (req, res) => {
-  const top = await listDir(req.user.instanceId, LIBRARY_DIR);
-  const nested = await Promise.all(
-    top.filter((entry) => entry.type === 'directory' && !entry.hidden).slice(0, 10).map(async (dir) =>
-      (await listDir(req.user.instanceId, `${LIBRARY_DIR}/${dir.name}`)).map((entry) => ({ ...entry, name: `${dir.name}/${entry.name}` }))
-    )
-  );
-  const files = [...top, ...nested.flat()]
-    .filter((entry) => entry.type === 'file' && !entry.hidden)
-    .map(({ name, size, modified }) => ({ name, size, modified }))
-    .sort((a, b) => b.modified - a.modified);
-  res.json({ data: files });
+  res.set('Cache-Control', 'private, no-store');
+  res.json(await listLibrary((dir) => listDir(req.user.instanceId, dir, { metadata: true })));
 }));
 
-// Only names under ~/muse/library, never a raw path: ~/.hermes/config.yaml holds the
-// instance's managed token, and the key behind this proxy can read any path.
-const LIBRARY_NAME = /^[^/.][^/]{0,200}(\/[^/.][^/]{0,200})?$/;
-
 app.get('/api/me/library/file', requireAgent, route(async (req, res) => {
-  const name = String(req.query.name || '');
-  if (!LIBRARY_NAME.test(name)) return res.status(400).json({ error: { code: 'invalid_request', message: 'Bad file name.' } });
-  const query = new URLSearchParams({ path: `${LIBRARY_DIR}/${name}`, disposition: req.query.download ? 'attachment' : 'inline' });
-  const upstream = await fetch(agentApi(req.user, `/v1/files/content?${query}`), { headers: { 'X-Agent37-Key': API_KEY } });
+  const name = req.query.name;
+  if (!validLibraryName(name)) return res.status(400).json({ error: { code: 'invalid_request', message: 'Bad file name.' } });
+  const filePath = await resolveLibraryFile(name, (dir) => listDir(req.user.instanceId, dir, { metadata: true }));
+  if (!filePath) return res.status(404).json({ error: { code: 'not_found', message: 'This file is no longer in your library.' } });
+  const query = new URLSearchParams({ path: filePath, disposition: req.query.download ? 'attachment' : 'inline' });
+  const controller = new AbortController();
+  res.on('close', () => controller.abort());
+  const headers = { 'X-Agent37-Key': API_KEY };
+  if (req.headers.range) headers.Range = req.headers.range;
+  const upstream = await fetch(agentApi(req.user, `/v1/files/content?${query}`), { headers, signal: controller.signal });
   if (!upstream.ok) {
+    if (upstream.status === 416) {
+      if (upstream.headers.has('content-range')) res.set('Content-Range', upstream.headers.get('content-range'));
+      await upstream.body?.cancel();
+      return res.status(416).end();
+    }
     const norm = normalizeError(upstream.status, await upstream.json().catch(() => null));
     return res.status(norm.status).json(norm.body);
   }
-  // Agent-written HTML or SVG opened directly would otherwise run scripts on this origin.
-  res.set({
+  // Sandbox active HTML/SVG even when a file URL is opened outside the preview.
+  res.status(upstream.status).set({
     'Content-Type': upstream.headers.get('content-type') || 'application/octet-stream',
     'Content-Disposition': upstream.headers.get('content-disposition') || 'inline',
     'Content-Security-Policy': 'sandbox',
     'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'private, no-cache',
   });
-  for await (const chunk of upstream.body) res.write(chunk);
-  res.end();
+  for (const header of ['content-length', 'content-range', 'accept-ranges']) {
+    if (upstream.headers.has(header)) res.set(header, upstream.headers.get(header));
+  }
+  try { await pipeline(Readable.fromWeb(upstream.body), res); }
+  catch (err) { if (!controller.signal.aborted) throw err; }
 }));
 
 // ---- Memory: USER.md (about you) and MEMORY.md (the agent's notes) ----

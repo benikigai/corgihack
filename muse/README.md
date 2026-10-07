@@ -84,7 +84,16 @@ Skills and credential changes produce a new installation revision. Existing
 ready agents sync on their next app visit, and new agents install during
 onboarding. Skills does not interrupt or replace the user's existing chat;
 **start a new chat** after an update to load the latest persona and skill list.
-Finished `.mp4`, `.webm`, and `.mov` files have video previews in Library.
+The labeled **Library** tab shows a thumbnail gallery with image, video, audio,
+and file filters, filename search, sorting, previews, and downloads. It refreshes
+when opened, after a chat completes while Library is open, and every 30 seconds
+while visible. Save creations in `~/muse/library/`, optionally in campaign folders
+(up to five nested folders). Listings are bounded at 100 directories / 2,000 files
+and show a notice if incomplete. Hidden files and symlinks are excluded.
+
+Finished `.mp4`, `.webm`, `.m4v`, and `.mov` files have video players; playback
+depends on browser codec support, with downloads available for every file. The
+Library shows files saved by the agent, not the live Meta Ads account inventory.
 
 Meta Ads and Supabase credentials are separate. The repo's
 [`hermes/config.mcp.yaml`](../hermes/config.mcp.yaml) is a configuration template,

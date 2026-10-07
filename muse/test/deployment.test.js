@@ -17,7 +17,7 @@ test('private access, callbacks, shared identity, and persistence across a resta
   let child;
   let base;
   async function start() {
-    child = spawn(process.execPath, ['server.js'], {
+    child = spawn(process.execPath, ['--import', path.join(dir, 'upstream.mjs'), 'server.js'], {
       cwd: new URL('..', import.meta.url),
       env: { ...process.env, PORT: '0', DATA_DIR: dir, NODE_ENV: 'production', AGENT37_API_KEY: 'test-not-a-real-key', MONID_API_KEY: '', SESSION_SECRET: secret, MUSE_ACCESS_PASSWORD: password, PUBLIC_URL: 'https://muse.example.test' },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -46,6 +46,27 @@ test('private access, callbacks, shared identity, and persistence across a resta
     tools: { revision: toolsRevision(''), status: 'ready' },
     notifyUrl: 'https://muse.example.test', profile: { agentName: 'Test Muse' }, notifications: [], mainSessionId: 'a'.repeat(32),
   } } }));
+  // Deterministic Agent37 responses exercise the actual authenticated file proxy.
+  await fs.writeFile(path.join(dir, 'upstream.mjs'), `
+    globalThis.fetch = async (url, init = {}) => {
+      const u = new URL(url);
+      if (u.pathname === '/v1/files') return Response.json({ entries: [
+        { name: 'ad.mp4', type: 'file', size: 10, modified: 1 },
+        { name: 'secret.txt', type: 'symlink' }
+      ] });
+      if (u.pathname === '/v1/files/content') {
+        const range = init.headers?.Range;
+        if (range === 'bytes=99-') return new Response(null, { status: 416, headers: { 'content-range': 'bytes */10' } });
+        return new Response(range ? '2345' : '0123456789', {
+          status: range ? 206 : 200,
+          headers: { 'content-type': 'video/mp4', 'content-length': range ? '4' : '10',
+            'accept-ranges': 'bytes', ...(range ? { 'content-range': 'bytes 2-5/10' } : {}),
+            'content-disposition': u.searchParams.get('disposition') }
+        });
+      }
+      throw new Error('Unexpected upstream: ' + u.pathname);
+    };
+  `);
   await start();
   const request = (url, options = {}) => fetch(base + url, { redirect: 'manual', ...options });
   assert.equal((await request('/healthz')).status, 200);
@@ -61,6 +82,22 @@ test('private access, callbacks, shared identity, and persistence across a resta
   assert.match(setCookie, /Secure/);
   const cookie = setCookie.split(';')[0];
   assert.equal((await request('/', { headers: { cookie } })).status, 200);
+  assert.equal((await request('/api/me/library')).status, 401);
+  const library = await (await request('/api/me/library', { headers: { cookie } })).json();
+  assert.deepEqual(library.data.map((f) => f.name), ['ad.mp4']);
+  const media = await request('/api/me/library/file?name=ad.mp4', { headers: { cookie, Range: 'bytes=2-5' } });
+  assert.equal(media.status, 206);
+  assert.equal(media.headers.get('content-range'), 'bytes 2-5/10');
+  assert.equal(media.headers.get('content-security-policy'), 'sandbox');
+  assert.equal(await media.text(), '2345');
+  const download = await request('/api/me/library/file?name=ad.mp4&download=1', { headers: { cookie } });
+  assert.equal(download.headers.get('content-disposition'), 'attachment');
+  assert.equal(await download.text(), '0123456789');
+  assert.equal((await request('/api/me/library/file?name=secret.txt', { headers: { cookie } })).status, 404);
+  assert.equal((await request('/api/me/library/file?name=..%2F.env', { headers: { cookie } })).status, 400);
+  const pastEnd = await request('/api/me/library/file?name=ad.mp4', { headers: { cookie, Range: 'bytes=99-' } });
+  assert.equal(pastEnd.status, 416);
+  assert.equal(pastEnd.headers.get('content-range'), 'bytes */10');
   const state = await (await request('/api/me', { headers: { cookie } })).json();
   assert.equal(state.profile.agentName, 'Test Muse');
   const deviceTwo = (await login(password)).headers.get('set-cookie').split(';')[0];

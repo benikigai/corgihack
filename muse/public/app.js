@@ -260,7 +260,11 @@ document.querySelector('.tabbar').addEventListener('click', (event) => {
 
 function showTab(name) {
   tab = name;
-  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
+  document.querySelectorAll('.tabbar button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.tab === name);
+    if (b.dataset.tab === name) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
   document.querySelectorAll('main .tab').forEach((section) => (section.hidden = section.id !== `tab-${name}`));
   $('#menu-btn').style.visibility = name === 'chat' ? 'visible' : 'hidden';
   if (name === 'ideas') loadIdeas();
@@ -493,6 +497,7 @@ async function consume(sid, response, ui) {
       case 'response.completed':
         sawTerminal = true;
         ui.finish(data.output_text, sawTools);
+        if (tab === 'library') loadLibrary();
         break;
       case 'response.failed':
         sawTerminal = true;
@@ -978,93 +983,174 @@ function goalSheet(goal) {
   });
 }
 
-// ---- Library: what the agent made, listed through the Files API ----
+// ---- Library: browse the media and files the agent has made ----
 
 const KINDS = [
+  ['image', 'Images', /\.(png|jpe?g|gif|webp|svg|avif)$/i],
+  ['video', 'Videos', /\.(mp4|webm|mov|m4v)$/i],
+  ['audio', 'Audio', /\.(mp3|wav|ogg|m4a|opus|flac)$/i],
   ['doc', 'Documents', /\.(md|txt|pdf|docx?|csv|xlsx?|json|rtf|pptx?)$/i],
-  ['web', 'Web artifacts', /\.html?$/i],
-  ['image', 'Images', /\.(png|jpe?g|gif|webp|svg)$/i],
-  ['audio', 'Audio', /\.(mp3|wav|ogg|m4a|opus)$/i],
-  ['video', 'Videos', /\.(mp4|webm|mov)$/i],
+  ['web', 'Web pages', /\.html?$/i],
   ['other', 'Other', /./],
 ];
-
 const kindOf = (name) => KINDS.find(([, , pattern]) => pattern.test(name));
 const extOf = (name) => (name.match(/\.([a-z0-9]+)$/i)?.[1] || 'file').slice(0, 4).toUpperCase();
 const sizeOf = (bytes) => (bytes > 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1000))} KB`);
+const libraryUrl = (name, modified) => `/api/me/library/file?${new URLSearchParams({ name, ...(modified ? { v: modified } : {}) })}`;
+const MEDIA_ICONS = {
+  image: '<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/>',
+  video: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m10 8 6 4-6 4z"/>',
+  audio: '<path d="M9 18V6l11-3v12M9 9l11-3"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="17" cy="15" rx="3" ry="3"/>',
+  doc: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5"/>',
+};
+const mediaIcon = (kind) => `<svg viewBox="0 0 24 24" aria-hidden="true">${MEDIA_ICONS[kind] || MEDIA_ICONS.doc}</svg>`;
+let libraryFiles = [];
+let libraryLoaded = false;
+let libraryLoading = false;
+let libraryFilter = 'all';
+let librarySignature = '';
 
-async function loadLibrary() {
+function matchesFilter(file, filter) {
+  const kind = kindOf(file.name)[0];
+  return filter === 'all' || kind === filter || (filter === 'files' && !['image', 'video', 'audio'].includes(kind));
+}
+
+function renderLibrary() {
+  const filters = $('#library-filters');
+  filters.replaceChildren();
+  for (const [key, label] of [['all', 'All'], ['image', 'Images'], ['video', 'Videos'], ['audio', 'Audio'], ['files', 'Files']]) {
+    const count = libraryFiles.filter((file) => matchesFilter(file, key)).length;
+    const button = h('button', key === libraryFilter ? 'on' : '', `${label}<span>${count}</span>`);
+    button.setAttribute('aria-pressed', String(key === libraryFilter));
+    button.setAttribute('aria-label', `${label} (${count})`);
+    button.addEventListener('click', () => { libraryFilter = key; renderLibrary(); });
+    filters.appendChild(button);
+  }
+  const query = $('#library-search').value.trim().toLowerCase();
+  const sort = $('#library-sort').value;
+  const files = libraryFiles.filter((file) => matchesFilter(file, libraryFilter) && file.name.toLowerCase().includes(query));
+  files.sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name) : sort === 'oldest' ? a.modified - b.modified : b.modified - a.modified);
+  $('#library-count').textContent = `${files.length}${files.length !== libraryFiles.length ? ` of ${libraryFiles.length}` : ''} ${libraryFiles.length === 1 ? 'creation' : 'creations'}`;
   const list = $('#library-list');
-  if (!list.children.length) list.innerHTML = '<div class="skeleton"></div>';
-  let data;
-  try {
-    ({ data } = await api.get('/api/me/library'));
-  } catch (err) {
-    list.innerHTML = `<p class="empty-state">${esc(err.message)}</p>`;
+  list.replaceChildren();
+  if (!files.length) {
+    const empty = h('div', 'library-empty', `${mediaIcon('image')}<h2>${libraryFiles.length ? 'No matches yet' : 'Your next idea belongs here'}</h2><p>${libraryFiles.length ? 'Try a different search or media type.' : `Ads, images, reels, and captions made by ${esc(me.profile.agentName)} will appear here once saved.`}</p>`);
+    const action = h('button', 'pill', libraryFiles.length ? 'Clear filters' : 'Make something with ' + esc(me.profile.agentName));
+    action.addEventListener('click', () => {
+      if (libraryFiles.length) { libraryFilter = 'all'; $('#library-search').value = ''; renderLibrary(); }
+      else { showTab('chat'); $('#input').focus(); }
+    });
+    empty.appendChild(action);
+    list.appendChild(empty);
     return;
   }
-  list.replaceChildren();
-  if (!data.length) list.appendChild(h('p', 'empty-state', `Documents, pages and images ${esc(me.profile.agentName)} makes for you land here.`));
-  for (const [key, label] of KINDS) {
-    const files = data.filter((file) => kindOf(file.name)[0] === key);
-    if (!files.length) continue;
-    list.appendChild(h('div', 'lib-group', label));
-    const box = h('div', 'list');
-    for (const file of files) {
-      const row = h(
-        'button',
-        'row',
-        `<span class="file-icon k-${key}">${extOf(file.name)}</span><span class="grow"><strong>${esc(file.name)}</strong><span class="meta">${sizeOf(file.size)} · ${ago(file.modified)}</span></span>${ICONS.chev}`
-      );
-      row.addEventListener('click', () => previewFile(file.name, key));
-      box.appendChild(row);
+  const grid = h('div', 'library-grid');
+  for (const file of files) {
+    const kind = kindOf(file.name)[0];
+    const basename = file.name.split('/').pop();
+    const folder = file.name.includes('/') ? file.name.slice(0, file.name.lastIndexOf('/')) : '';
+    const card = h('button', 'media-card');
+    card.title = file.name;
+    card.setAttribute('aria-label', `Preview ${file.name}`);
+    const visual = h('span', `media-visual media-${kind}`, `<span class="media-fallback">${mediaIcon(kind)}</span>`);
+    if (kind === 'image' || kind === 'video') {
+      const media = kind === 'image'
+        ? Object.assign(h('img'), { alt: '', loading: 'lazy', decoding: 'async' })
+        : Object.assign(h('video'), { muted: true, playsInline: true, preload: 'metadata' });
+      // Metadata provides a still frame without auto-playing every reel in the grid.
+      media.src = libraryUrl(file.name, file.modified) + (kind === 'video' ? '#t=0.1' : '');
+      media.addEventListener('error', () => media.remove(), { once: true });
+      visual.appendChild(media);
     }
-    list.appendChild(box);
+    visual.appendChild(h('span', 'media-badge', kind === 'video' ? `▶ ${extOf(file.name)}` : extOf(file.name)));
+    const info = h('span', 'media-info', `<strong>${esc(basename)}</strong>${folder ? `<span class="media-folder">${esc(folder)}</span>` : ''}<span class="media-meta">${sizeOf(file.size)} · ${ago(file.modified)}</span>`);
+    card.append(visual, info);
+    card.addEventListener('click', () => previewFile(file.name, kind, file));
+    grid.appendChild(card);
   }
-  list.appendChild(h('div', 'lib-group', 'System files'));
-  const system = h('div', 'list');
-  for (const [name, open] of [
-    ['SOUL.md', soulSheet],
-    ['USER.md', memorySheet],
-    ['MEMORY.md', memorySheet],
-  ]) {
-    const row = h('button', 'row', `<span class="file-icon k-system">MD</span><span class="grow"><strong>${name}</strong></span>${ICONS.chev}`);
-    row.addEventListener('click', () => open());
-    system.appendChild(row);
+  list.appendChild(grid);
+}
+
+async function loadLibrary() {
+  if (libraryLoading) return;
+  libraryLoading = true;
+  const list = $('#library-list');
+  const refresh = $('#library-refresh');
+  refresh.disabled = true;
+  list.setAttribute('aria-busy', 'true');
+  if (!libraryLoaded) list.innerHTML = '<div class="library-grid"><div class="skeleton"></div><div class="skeleton"></div></div>';
+  try {
+    const { data, truncated } = await api.get('/api/me/library');
+    libraryFiles = data;
+    const signature = JSON.stringify(data);
+    if (!libraryLoaded || signature !== librarySignature) renderLibrary();
+    librarySignature = signature;
+    libraryLoaded = true;
+    $('#library-warning').hidden = !truncated;
+    $('#library-warning').textContent = 'Showing part of a large library. Files in very deep folders may not appear.';
+  } catch (err) {
+    $('#library-warning').hidden = false;
+    $('#library-warning').textContent = `Couldn't refresh your library. ${err.message}`;
+    if (!libraryLoaded) {
+      list.replaceChildren(h('p', 'empty-state', 'Your files couldn’t be loaded. Tap refresh to try again.'));
+      $('#library-count').textContent = 'Unavailable';
+    }
+  } finally {
+    libraryLoading = false;
+    refresh.disabled = false;
+    list.setAttribute('aria-busy', 'false');
   }
-  list.appendChild(system);
 }
 
 $('#library-refresh').addEventListener('click', loadLibrary);
+$('#library-search').addEventListener('input', () => { if (libraryLoaded) renderLibrary(); });
+$('#library-sort').addEventListener('change', () => { if (libraryLoaded) renderLibrary(); });
+setInterval(() => { if (tab === 'library' && !document.hidden && me?.state === 'ready') loadLibrary(); }, 30000);
+for (const [label, open] of [['Personality', soulSheet], ['Memories', memorySheet]]) {
+  const row = h('button', 'row', `<span class="grow"><strong>${label}</strong></span>${ICONS.chev}`);
+  row.addEventListener('click', open);
+  $('#library-system').appendChild(row);
+}
 
-function previewFile(name, kind) {
-  const url = `/api/me/library/file?name=${encodeURIComponent(name)}`;
+function previewFile(name, kind, file = libraryFiles.find((entry) => entry.name === name)) {
+  const url = libraryUrl(name, file?.modified);
   openSheet(name.split('/').pop(), async (body) => {
-    if (kind === 'web') {
-      // srcdoc in a sandbox without allow-same-origin: the page gets an opaque origin, so
-      // whatever the agent wrote can run its own scripts but never touch this app.
-      const frame = h('iframe', 'preview-frame');
-      frame.setAttribute('sandbox', 'allow-scripts');
-      frame.srcdoc = await (await fetch(url)).text();
-      body.appendChild(frame);
-    } else if (kind === 'image') {
-      body.appendChild(Object.assign(h('img', 'preview-img'), { src: url, alt: name }));
-    } else if (kind === 'audio') {
-      body.appendChild(Object.assign(h('audio'), { src: url, controls: true, style: 'width:100%' }));
-    } else if (kind === 'video') {
-      body.appendChild(Object.assign(h('video'), { src: url, controls: true, playsInline: true, preload: 'metadata', style: 'width:100%;max-height:70vh;border-radius:16px' }));
-    } else if (/\.(md|txt|csv|json)$/i.test(name)) {
-      const pre = h('pre', 'preview-text');
-      pre.textContent = await (await fetch(url)).text();
-      body.appendChild(pre);
-    } else {
-      body.appendChild(h('p', 'empty-state', 'No preview for this file type.'));
-    }
-    const download = h('a', 'primary', 'Download');
+    const preview = h('div', 'media-preview');
+    body.appendChild(preview);
+    if (file) body.appendChild(h('p', 'preview-meta', `${esc(kindOf(name)[1])} · ${sizeOf(file.size)} · ${esc(new Date(file.modified).toLocaleString())}`));
+    const download = h('a', 'primary media-download', 'Download file');
     download.href = `${url}&download=1`;
-    download.style.textAlign = 'center';
-    download.style.textDecoration = 'none';
+    download.download = name.split('/').pop();
     body.appendChild(download);
+    const failure = () => preview.replaceChildren(h('p', 'empty-state', 'This preview is unavailable. Download the file to open it.'));
+    try {
+      if (kind === 'web' || /\.(md|txt|csv|json)$/i.test(name)) {
+        preview.textContent = 'Loading preview…';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Preview unavailable');
+        const text = await res.text();
+        preview.replaceChildren();
+        if (kind === 'web') {
+          const frame = h('iframe', 'preview-frame');
+          frame.title = name;
+          frame.setAttribute('sandbox', 'allow-scripts');
+          frame.srcdoc = text;
+          preview.appendChild(frame);
+        } else {
+          const pre = h('pre', 'preview-text');
+          pre.textContent = text;
+          preview.appendChild(pre);
+        }
+      } else if (['image', 'audio', 'video'].includes(kind)) {
+        const media = kind === 'image' ? Object.assign(h('img', 'preview-img'), { alt: name })
+          : Object.assign(h(kind, 'preview-media'), { controls: true, playsInline: true, preload: 'metadata' });
+        media.addEventListener('error', failure, { once: true });
+        media.src = url;
+        preview.appendChild(media);
+      } else {
+        preview.appendChild(h('div', 'library-empty', `${mediaIcon('doc')}<p>Download this file to open it.</p>`));
+      }
+    } catch { failure(); }
   });
 }
 
@@ -1473,6 +1559,7 @@ function showSheet() {
 }
 
 function closeSheet() {
+  $('#sheet-body').querySelectorAll('video, audio').forEach((media) => media.pause());
   sheetStack.length = 0;
   $('#backdrop').hidden = true;
   $('#sheet').hidden = true;
