@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Reel"
+  short_description: "Turn product photos into polished social video ads"
+  default_prompt: "Use $product-reel to turn these product images into a finished Instagram reel for my audience, with music, a cover, and a caption."

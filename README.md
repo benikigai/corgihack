@@ -14,7 +14,7 @@ flowchart LR
 
   subgraph agent37[Agent37 box]
     hermes[Hermes agent]
-    skills[[skills: corgi-ads, monid]]
+    skills[[skills: corgi-ads, product-reel, monid]]
     cron{{cron every 15m}}
     hermes --- skills
     cron --> hermes
@@ -30,7 +30,7 @@ flowchart LR
 | Step | What happens | Where |
 |---|---|---|
 | 1. Research | Monid pulls the top 5 competitor Instagram ads. Agent names the hook, format, offer. | `competitor_ads` |
-| 2. Create | Agent writes 3 variants with different hooks, generates media. | `creatives` |
+| 2. Create | Agent writes 3 variants with different hooks; `product-reel` turns product photos into finished video ads. | `creatives` |
 | 3. Launch | Agent picks manual vs Advantage+ and says why, then creates the ads on Meta. | Meta, `creatives.meta_ad_id` |
 | 4. Monitor | Cron reads ad-level insights, snapshots them. | `ad_snapshots` |
 | 5. Direct spend | Agent proposes pause or budget shift. You say "approve". It applies and confirms. | `recommendations`, Meta |
@@ -44,6 +44,7 @@ only reads Supabase. That keeps the token in one place and the UI dumb.
 hermes/
   config.mcp.yaml              MCP servers to merge into ~/.hermes/config.yaml
   skills/marketing/corgi-ads/  Monitor + recommend + guardrails skill
+  skills/marketing/product-reel/  Product photos → reel, cover, caption + media checks
 supabase/schema.sql            Shared data contract (agent writes, web reads)
 web/                           Dashboard
 docs/demo.md                   3-minute demo script and backups
@@ -75,12 +76,30 @@ Proposed split. Swap freely, just update this table.
 1. `cp .env.example ~/.hermes/.env` and fill it in.
 2. Merge `hermes/config.mcp.yaml` into `~/.hermes/config.yaml`. Start with option A, then `/reload-mcp`.
 3. Smoke test in chat: *"list my ad accounts and today's spend"*. If it fails, try option B, then C.
-4. `cp -r hermes/skills/marketing/corgi-ads ~/.hermes/skills/marketing/`
+4. Install the bundled skills:
+   ```sh
+   mkdir -p ~/.hermes/skills/marketing
+   cp -R hermes/skills/marketing/corgi-ads hermes/skills/marketing/product-reel ~/.hermes/skills/marketing/
+   ```
 5. Monid: `monid keys add -k "$MONID_API_KEY" -l main`, and load Monid's SKILL.md into Hermes.
 6. Schedule the monitor (gateway must be running):
    ```
    hermes cron create "every 15m" "Run the corgi-ads monitor loop and report" --skill corgi-ads
    ```
+
+**Product reel creation**
+
+Attach product photos and ask: *"Use product-reel to make a 20-second Instagram
+ad for young adults with a playful summer feel, music, a cover, and a caption."*
+The [skill](hermes/skills/marketing/product-reel/SKILL.md) includes creative
+direction, Monid production guidance, and a local media checker. The agent host
+needs Python 3, FFmpeg (including ffprobe), and authenticated Monid access for
+Monid generation. It uses available image tools or discovers an image endpoint
+through Monid; Codex's built-in image generator is optional.
+
+The result is a local MP4, cover, caption, and editable source assets. Generation
+can spend Monid credits. Publishing the creative or launching a Meta ad is a
+separate action from making the reel.
 
 **Supabase**
 1. New project. Run `supabase/schema.sql` in the SQL editor.
