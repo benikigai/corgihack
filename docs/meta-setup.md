@@ -38,6 +38,11 @@ The old personal ad account `act_1837589724256730` could not be moved into the p
 4. In Hermes: `/reload-mcp`.
 5. Ask Hermes: "list my ad accounts and today's spend". Expect Corgi Ads, ACTIVE, $0.
 
+## Any other agent (Zen's Muse agent, Claude Code, scripts)
+
+Same two things: MCP server URL `https://mcp.facebook.com/ads` (streamable HTTP) and header
+`Authorization: Bearer <corgi-agent token>`. No OAuth, no app login.
+
 ## Connecting Hermes
 
 Option A in [`hermes/config.mcp.yaml`](../hermes/config.mcp.yaml) is the one that works:

@@ -9,3 +9,9 @@ Also the click-through URL for the ads (`link_url`).
 - `corgi-ads.jpg`, `favicon.png`: the Corgi Ads Facebook Page profile photo.
 
 Deploy: `cd landing && vercel deploy --prod --scope benjamin-shyong`
+
+## Agent chat (`/agent` + `api/chat.js`)
+
+Chat UI that calls Claude (claude-opus-5-5) with Meta's ads MCP server attached, read-only tools only.
+Needs Vercel env vars: `ANTHROPIC_API_KEY`, `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`,
+`AGENT_PASSCODE`. Requests without the passcode header get 401.
