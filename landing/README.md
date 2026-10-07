@@ -1,9 +1,13 @@
 # Landing page
 
-Static Corgi Pop page, live at https://corgi-hack-tau.vercel.app (Vercel project `benjamin-shyong/corgi-hack`).
-Also the click-through URL for the ads (`link_url`).
+Live at **https://corgi-hack-tau.vercel.app** (Vercel project `benjamin-shyong/corgi-hack`).
 
-- `index.html`: the page. Plain HTML/CSS, no build step.
+**Deploys are manual from this folder on branch `ben/meta-setup`.** The Vercel project has no Git
+connection, so pushes don't redeploy. Run `vercel deploy --prod --scope benjamin-shyong` from here.
+
+- `index.html`: the demo page: what Corgi Ads is, how it works, the ads, the stack.
+- `corgi-pop/`: the Corgi Pop product page, and the ads' click-through URL (`link_url`).
+- `ads/`: compressed copies of the three sample ads for the demo page.
 - `agent/`: placeholder for Zen's agent UI at `/agent`.
 - `hero.jpg`, `loop.mp4`: from `examples/ads/`.
 - `corgi-ads.jpg`, `favicon.png`: the Corgi Ads Facebook Page profile photo.
