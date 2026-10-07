@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corgi Pop</title>
+<meta name="description" content="Corgi Pop: the peach soda worth zooming for. A fictional drink made for the Corgi Hackathon.">
+<meta property="og:title" content="Corgi Pop">
+<meta property="og:description" content="Fizz worth zooming for.">
+<meta property="og:image" content="/hero.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐕</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --peach:#ff9f6e; --peach-deep:#e8754a; --cream:#fff6ea; --ink:#3a2418; --muted:#7a5c4c; --card:#ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --cream:#1f1510; --ink:#fbeee3; --muted:#c9ab98; --card:#2a1d16; } }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--cream); color:var(--ink); font-family:Inter,system-ui,sans-serif; line-height:1.5; }
+  .wrap { max-width:1080px; margin:0 auto; padding:0 16px; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:20px 0; }
+  .logo { font-family:Fredoka,sans-serif; font-weight:700; font-size:28px; color:var(--peach-deep); }
+  .hero { display:grid; grid-template-columns:1.1fr .9fr; gap:40px; align-items:center; padding:24px 0 56px; }
+  h1 { font-family:Fredoka,sans-serif; font-size:clamp(40px,7vw,72px); line-height:1.02; }
+  h1 span { color:var(--peach-deep); }
+  .lede { font-size:19px; color:var(--muted); margin:18px 0 28px; max-width:30ch; }
+  .cta { display:inline-block; background:var(--peach-deep); color:#fff; font-weight:600; padding:16px 28px; border-radius:999px; text-decoration:none; font-size:17px; border:0; cursor:pointer; }
+  .cta:hover { filter:brightness(1.07); }
+  .video { border-radius:28px; overflow:hidden; aspect-ratio:9/16; max-height:78vh; justify-self:center; box-shadow:0 24px 60px rgba(120,60,20,.25); }
+  .video video { width:100%; height:100%; object-fit:cover; display:block; }
+  .perks { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding-bottom:56px; }
+  .perk { background:var(--card); border-radius:20px; padding:22px; }
+  .perk b { font-family:Fredoka,sans-serif; font-size:20px; display:block; margin-bottom:6px; }
+  .perk p { color:var(--muted); font-size:15px; }
+  form { display:flex; gap:10px; flex-wrap:wrap; }
+  input[type=email] { flex:1 1 220px; padding:15px 18px; border-radius:999px; border:2px solid var(--peach); background:var(--card); color:var(--ink); font-size:16px; }
+  .thanks { display:none; font-weight:600; color:var(--peach-deep); margin-top:10px; }
+  footer { padding:28px 0 40px; color:var(--muted); font-size:13px; border-top:1px solid rgba(120,60,20,.15); }
+  @media (max-width:760px) { .hero { grid-template-columns:1fr; } .video { max-height:none; width:100%; max-width:360px; } .perks { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="logo">Corgi Pop</div><a class="cta" style="padding:10px 18px;font-size:15px" href="#drop">Get a can</a></header>
+  <section class="hero">
+    <div>
+      <h1>Fizz worth<br><span>zooming for.</span></h1>
+      <p class="lede">Peach soda, ice cold, short-legged and proud of it. Corgi approved, 10/10 boops.</p>
+      <div id="drop">
+        <form onsubmit="event.preventDefault();this.style.display='none';document.querySelector('.thanks').style.display='block'">
+          <input type="email" required placeholder="you@email.com" aria-label="Email">
+          <button class="cta" type="submit">Join the first drop</button>
+        </form>
+        <p class="thanks">You're on the list. 🐕</p>
+      </div>
+    </div>
+    <div class="video"><video src="/loop.mp4" poster="/hero.jpg" autoplay muted loop playsinline></video></div>
+  </section>
+  <section class="perks">
+    <div class="perk"><b>Ice cold</b><p>Built for too-hot-for-walkies days.</p></div>
+    <div class="perk"><b>Real peach</b><p>Bright, fizzy, not too sweet.</p></div>
+    <div class="perk"><b>Corgi tested</b><p>Every batch gets a nose boop of approval.</p></div>
+  </section>
+  <footer>Corgi Pop is a fictional drink made for the Corgi Hackathon demo. Nothing is for sale and no emails are collected.</footer>
+</div>
+</body>
+</html>
