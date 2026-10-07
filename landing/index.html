@@ -106,6 +106,29 @@
   .tech span { background:var(--card); border:1px solid var(--line); border-radius:999px; padding:10px 16px; font-weight:600; }
   .tech span small { color:var(--muted); font-weight:400; margin-left:6px; }
   @media (max-width:860px) { .steps { grid-template-columns:1fr 1fr; } }
+
+  body { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%23e8754a' fill-opacity='0.07' transform='rotate(-20 60 60)'%3E%3Cellipse cx='60' cy='72' rx='14' ry='11'/%3E%3Ccircle cx='44' cy='54' r='6'/%3E%3Ccircle cx='54' cy='46' r='6'/%3E%3Ccircle cx='66' cy='46' r='6'/%3E%3Ccircle cx='76' cy='54' r='6'/%3E%3C/g%3E%3C/svg%3E"); background-size:120px; }
+  h1 .legs { display:block; font-size:clamp(18px,2.4vw,24px); color:var(--muted); font-family:Fredoka,sans-serif; font-weight:500; margin-top:10px; transform:rotate(-2deg); }
+  .mascot { position:relative; justify-self:center; max-width:380px; width:100%; animation:bob 2.6s ease-in-out infinite; }
+  .mascot img { width:100%; border-radius:40% 40% 32px 32px; border:6px solid var(--accent); transform:rotate(3deg); box-shadow:10px 12px 0 var(--accent-soft); max-width:none; }
+  .sticker { position:absolute; font-family:Fredoka,sans-serif; font-weight:700; background:#ffd84d; color:#2e1d14; padding:8px 14px; border-radius:999px; border:3px solid #2e1d14; box-shadow:3px 3px 0 #2e1d14; font-size:15px; white-space:nowrap; }
+  .s1 { top:-10px; left:-18px; transform:rotate(-10deg); }
+  .s2 { bottom:18px; right:-14px; transform:rotate(8deg); background:#9fe3c1; }
+  @keyframes bob { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-10px) } }
+  .btn { border:3px solid var(--ink) !important; box-shadow:4px 4px 0 var(--ink); transition:transform .15s; }
+  .btn:hover { transform:rotate(-2deg) scale(1.04); filter:none; }
+  .btn:active { transform:translate(3px,3px); box-shadow:1px 1px 0 var(--ink); }
+  .card, .stat, .ad, .diagram, .tech span { border:3px solid var(--ink) !important; box-shadow:5px 5px 0 var(--accent); border-radius:22px; }
+  .stat:nth-child(odd) { transform:rotate(-1.5deg); } .stat:nth-child(even) { transform:rotate(1.5deg); }
+  .ad:nth-child(1) { transform:rotate(-2deg); } .ad:nth-child(3) { transform:rotate(2deg); }
+  .ad:hover, .stat:hover { transform:rotate(0) scale(1.03); transition:transform .2s; }
+  .wag { display:inline-block; animation:wag .6s ease-in-out infinite alternate; transform-origin:70% 90%; }
+  @keyframes wag { from { transform:rotate(-12deg) } to { transform:rotate(12deg) } }
+  .tilt { display:inline-block; color:var(--accent); transform:rotate(-3deg); }
+  .client img { border:6px solid var(--ink); transform:rotate(-3deg); box-shadow:10px 10px 0 var(--accent); }
+  .steps div { border-top:6px dotted var(--accent); }
+  .words em { display:inline-block; transform:rotate(-1deg); }
+  @media (prefers-reduced-motion: reduce) { .mascot, .wag { animation:none; } }
 </style>
 </head>
 <body>
@@ -117,22 +140,22 @@
 
   <section class="hero">
     <div>
-      <h1>Ads that<br><span>run themselves.</span></h1>
-      <p class="lede">An agent that finds what works, makes the video, launches it on Meta, and watches the spend.</p>
+      <h1>Ads that<br><span>run themselves.</span><small class="legs">(on very short legs)</small></h1>
+      <p class="lede">A very good boy who sniffs out what works, fetches the video, zooms it onto Meta, and guards every dollar.</p>
       <div class="btns">
-        <a class="btn primary" href="https://prod-muse-instacloud-muse-07ee54-007x05v54jj.compute.instacloud-edge.com" target="_blank" rel="noopener">Talk to the agent</a>
+        <a class="btn primary" href="https://prod-muse-instacloud-muse-07ee54-007x05v54jj.compute.instacloud-edge.com" target="_blank" rel="noopener">Talk to the agent 🐾</a>
         <a class="btn ghost" href="#how">How it works</a>
       </div>
     </div>
-    <img src="/corgi-ads.jpg" alt="Corgi Ads mascot">
+    <div class="mascot"><img src="/corgi-ads.jpg" alt="Corgi Ads mascot"><span class="sticker s1">certified good boy</span><span class="sticker s2">98 tricks</span></div>
   </section>
 
   <section>
-    <p class="words">Research. Create. Launch. Babysit.<br><em>Every week, by hand.</em></p>
+    <p class="words">Research. Create. Launch. Babysit.<br><em>Every week, by hand. Ruff.</em></p>
   </section>
 
   <section id="how">
-    <h2>One chat does all four.</h2>
+    <h2>One chat does all four. <span class="wag">🐕</span></h2>
     <div class="diagram" role="img" aria-label="You chat with the Muse agent on Agent37. It uses Monid to research Instagram ads, product-reel to make videos, and Meta's ads MCP server to launch and track ads. Spending waits for your approval.">
       <svg viewBox="0 0 1000 430" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -183,10 +206,10 @@
       </svg>
     </div>
     <div class="steps">
-      <div><b>Research</b><span>Monid pulls top Instagram ads in your category.</span></div>
-      <div><b>Create</b><span>product-reel turns a product photo into a vertical ad.</span></div>
-      <div><b>Launch</b><span>Meta ads MCP builds it as a draft. You say yes.</span></div>
-      <div><b>Track</b><span>Every 15 min: spend, CTR, pause the losers.</span></div>
+      <div><b>🐽 Sniff</b><span>Monid pulls top Instagram ads in your category.</span></div>
+      <div><b>🎾 Fetch</b><span>product-reel turns a product photo into a vertical ad.</span></div>
+      <div><b>💨 Zoomies</b><span>Meta ads MCP builds it as a draft. You say yes.</span></div>
+      <div><b>🛡️ Guard</b><span>Every 15 min: spend, CTR, pause the losers.</span></div>
     </div>
   </section>
 
@@ -194,14 +217,14 @@
     <div>
       <div class="eyebrow">The test client</div>
       <h2>Corgi Pop</h2>
-      <p class="lede">A peach soda we made up, so the agent had a brand to sell.</p>
+      <p class="lede">A peach soda we made up, so the agent had a brand to sell. Corgi tested, 10/10 boops.</p>
       <a class="btn ghost" href="/corgi-pop/">Its landing page →</a>
     </div>
     <img src="/hero.jpg" alt="Corgi Pop can with a corgi">
   </section>
 
   <section id="ads">
-    <h2>Three hooks. Same footage.</h2>
+    <h2>Three hooks. Same footage. <span class="tilt">Best boy wins.</span></h2>
     <div class="ads">
       <div class="ad"><video src="/ads/zoomies.mp4" poster="/ads/zoomies.jpg" controls muted playsinline preload="none"></video><div><b>"Your corgi called."</b></div></div>
       <div class="ad"><video src="/ads/beat-heat.mp4" poster="/ads/beat-heat.jpg" controls muted playsinline preload="none"></video><div><b>"Too hot for walkies?"</b></div></div>
@@ -211,15 +234,15 @@
 
   <section>
     <div class="proof">
-      <div class="stat"><div class="v">98</div><div class="l">Meta ads tools</div></div>
-      <div class="stat"><div class="v">1</div><div class="l">live ad account</div></div>
-      <div class="stat"><div class="v">3</div><div class="l">agent skills</div></div>
-      <div class="stat"><div class="v">$0</div><div class="l">until you say yes</div></div>
+      <div class="stat"><div class="v">98</div><div class="l">Meta ads tricks learned</div></div>
+      <div class="stat"><div class="v">1</div><div class="l">live ad account guarded</div></div>
+      <div class="stat"><div class="v">3</div><div class="l">skills (sniff, fetch, zoom)</div></div>
+      <div class="stat"><div class="v">$0</div><div class="l">spent until you say "good boy"</div></div>
     </div>
   </section>
 
   <section id="stack">
-    <h2>Built with</h2>
+    <h2>Built with (and treats)</h2>
     <div class="tech">
       <span>Agent37 <small>the agent</small></span>
       <span>Monid <small>research + generation</small></span>
@@ -234,7 +257,7 @@
     </div>
   </section>
 
-  <footer>Ben and Zen · Corgi Hackathon. Corgi Pop is fictional.</footer>
+  <footer>Ben and Zen · Corgi Hackathon · No real sodas were harmed. Corgi Pop is fictional. 🐾</footer>
 </div>
 </body>
 </html>
