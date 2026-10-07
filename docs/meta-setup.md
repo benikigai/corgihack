@@ -22,10 +22,21 @@ The old personal ad account `act_1837589724256730` could not be moved into the p
 
 ## Open items
 
-- [ ] Assign `act_0000000000000000` to corgi-agent with full access (Business settings > Ad accounts > Assign people). Until then the token sees no ad accounts.
-- [ ] Payment method on `act_0000000000000000`, needed before anything can be published.
+- [x] `act_0000000000000000` assigned to corgi-agent with full access.
+- [x] Payment method on the ad account (`has_payment_method: true`). Publishing now spends real money.
 - [ ] Invite Zen: Business settings > Users > People > Add, full control of the ad account and Page.
-- [ ] Optional guardrail: Business settings > Integrations > Ads MCP server, block budgets above $20.
+- [ ] Account spending limit (Billing & payments > Payment settings), e.g. $15. The Ads MCP server rules page
+      only has on/off switches here; its "budgets above $X" rule only applies while all budget edits are blocked,
+      so it can't be used as a cap without also stopping Hermes from setting any budget.
+
+## Zen: connecting Hermes in 5 steps
+
+1. Get the token from the shared vault vault (ask Ben). Never paste it into chat, Notion, or git.
+2. On the Agent37 box, add to `~/.hermes/.env`:
+   `META_ACCESS_TOKEN=...`, `META_AD_ACCOUNT_ID=act_0000000000000000`, `META_PAGE_ID=0000000000000000`
+3. Merge option A of `hermes/config.mcp.yaml` into `~/.hermes/config.yaml`.
+4. In Hermes: `/reload-mcp`.
+5. Ask Hermes: "list my ad accounts and today's spend". Expect Corgi Ads, ACTIVE, $0.
 
 ## Connecting Hermes
 
@@ -51,8 +62,12 @@ scripts/verify.sh       # Graph /me/adaccounts + MCP tools/list
 Both default to `~/corgihack-secrets/.env`; set `ENV_FILE=~/.hermes/.env` to point elsewhere.
 Graph calls need a version (`/v26.0/`); unversioned calls fail with "deprecated version of the Ads API".
 
-Last check: MCP `tools/list` returned 98 tools. `/me/adaccounts` returned `[]` because the ad account
-isn't assigned to corgi-agent yet.
+Last check (2026-10-07): MCP `tools/list` returned 98 tools. `/me/adaccounts` returned Corgi Ads,
+`account_status: 1`. MCP `ads_get_ad_accounts` returned `is_ads_mcp_enabled: true`, `has_payment_method: true`.
+`ads_creative_upload_media` uploaded `examples/ads/corgi-pop-hero.png` by URL (image hash `02f6b2c9987749dafb500286e856362e`).
+
+`scripts/mcp.py <tool> '<json args>'` calls any MCP tool from a terminal with the token from `.env`, e.g.
+`scripts/mcp.py ads_get_ad_accounts '{}'`.
 
 ## Video ad flow over MCP
 
