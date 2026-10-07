@@ -8,7 +8,7 @@
 <meta property="og:title" content="Corgi Pop">
 <meta property="og:description" content="Fizz worth zooming for.">
 <meta property="og:image" content="/hero.jpg">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐕</text></svg>">
+<link rel="icon" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -34,6 +34,8 @@
   form { display:flex; gap:10px; flex-wrap:wrap; }
   input[type=email] { flex:1 1 220px; padding:15px 18px; border-radius:999px; border:2px solid var(--peach); background:var(--card); color:var(--ink); font-size:16px; }
   .thanks { display:none; font-weight:600; color:var(--peach-deep); margin-top:10px; }
+  .badge { display:inline-flex; align-items:center; gap:10px; text-decoration:none; color:var(--ink); font-weight:600; margin-bottom:12px; }
+  .badge img { width:44px; height:44px; border-radius:50%; }
   footer { padding:28px 0 40px; color:var(--muted); font-size:13px; border-top:1px solid rgba(120,60,20,.15); }
   @media (max-width:760px) { .hero { grid-template-columns:1fr; } .video { max-height:none; width:100%; max-width:360px; } .perks { grid-template-columns:1fr; } }
 </style>
@@ -60,7 +62,9 @@
     <div class="perk"><b>Real peach</b><p>Bright, fizzy, not too sweet.</p></div>
     <div class="perk"><b>Corgi tested</b><p>Every batch gets a nose boop of approval.</p></div>
   </section>
-  <footer>Corgi Pop is a fictional drink made for the Corgi Hackathon demo. Nothing is for sale and no emails are collected.</footer>
+  <footer>
+    <a class="badge" href="/agent/"><img src="/corgi-ads.jpg" alt="Corgi Ads mascot">Ad run by Corgi Ads, the ad agent</a><br>
+    Corgi Pop is a fictional drink made for the Corgi Hackathon demo. Nothing is for sale and no emails are collected.</footer>
 </div>
 </body>
 </html>
