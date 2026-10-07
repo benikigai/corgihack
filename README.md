@@ -6,6 +6,18 @@ money should go. You approve; it acts.
 
 Built at the Corgi Hackathon by Ben and Zen.
 
+## Live links
+
+| What | URL |
+|---|---|
+| Demo page | https://corgi-hack-tau.vercel.app |
+| Corgi Pop landing page (ad click-through) | https://corgi-hack-tau.vercel.app/corgi-pop/ |
+| Agent console (Claude + Meta ads MCP, passcode) | https://corgi-hack-tau.vercel.app/agent/ |
+| Muse agent (Agent37 on Instacloud, password) | https://prod-muse-instacloud-muse-07ee54-007x05v54jj.compute.instacloud-edge.com |
+
+**Vercel:** project `benjamin-shyong/corgi-hack`, site code in `landing/`, deployed from branch
+**`ben/meta-setup`**. To deploy: `cd landing && vercel deploy --prod --scope benjamin-shyong`.
+
 ## Architecture
 
 ```mermaid
