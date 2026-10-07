@@ -50,7 +50,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await client.beta.messages.create({
-      model: "claude-opus-5-5",
+      model: "claude-sonnet-5-5",
       max_tokens: 16000,
       output_config: { effort: "medium" },
       betas: ["mcp-client-2025-11-20", "server-side-fallback-2026-07-01"],
