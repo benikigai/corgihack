@@ -68,7 +68,7 @@ Proposed split. Swap freely, just update this table.
 **Meta access** (people get roles, the agent gets a system user)
 1. business.facebook.com: one Business portfolio owns the ad account and the Facebook Page.
 2. People: Business settings > Users > People > Add, invite Ben and Zen by email, give each full control of the ad account and Page.
-3. Agent: Business settings > Users > System users > Add (admin). Assign the ad account (manage campaigns) and the Page. Generate a token with `ads_read`, `ads_management`, `business_management`. That token goes in `~/.hermes/.env` as `META_ACCESS_TOKEN`.
+3. Agent: Business settings > Users > System users > Add with the **Employee** role (Admin-role tokens are rejected by Meta's ads MCP server). Assign the ad account and the Page with full access, plus the app. Generate a token that includes `ads_mcp_management`, `ads_management`, `ads_read`, `business_management`. That token goes in `~/.hermes/.env` as `META_ACCESS_TOKEN`. Current state and IDs: [docs/meta-setup.md](docs/meta-setup.md).
 4. Billing > Payment settings: account spending limit $15.
 
 **Agent (Agent37 box)**
