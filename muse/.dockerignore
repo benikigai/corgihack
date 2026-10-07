@@ -1,0 +1,14 @@
+node_modules
+.git
+.insta
+.agents
+.claude
+.codex
+.env
+.env.*
+data
+docs
+test
+*.log
+bun.lock
+skills-lock.json

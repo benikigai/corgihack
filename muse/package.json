@@ -1,0 +1,20 @@
+{
+  "name": "muse",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Build your own Muse: a personal agent app on Agent37 with chat, ideas, goals and a library",
+  "scripts": {
+    "bundle:skills": "node bundle.js",
+    "deploy": "npm run bundle:skills && insta --agent build . --port 3104 && insta --agent deploy . --group muse --branch muse-instacloud --port 3104",
+    "test": "node --test",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
