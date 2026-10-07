@@ -1,0 +1,34 @@
+# Merge into ~/.hermes/config.yaml on the Agent37 box, then /reload-mcp.
+# Keep ONE meta_ads entry. Try A, fall back to B, then C.
+
+mcp_servers:
+
+  # A. Meta official MCP, token in a header (simplest, no OAuth dance)
+  meta_ads:
+    url: "https://mcp.facebook.com/ads"
+    headers:
+      Authorization: "Bearer ${META_ACCESS_TOKEN}"
+
+  # B. Meta official MCP via OAuth with your own Meta app.
+  #    Meta has no dynamic client registration, so pin your app's client.
+  #    Register http://localhost:27890/callback as a redirect URI on the app.
+  #    On Agent37, run `hermes mcp login meta_ads` and paste back the
+  #    redirect URL when prompted (or approve in the box's desktop browser).
+  # meta_ads:
+  #   url: "https://mcp.facebook.com/ads"
+  #   auth: oauth
+  #   oauth:
+  #     client_id: "${META_APP_ID}"
+  #     client_secret: "${META_APP_SECRET}"
+  #     redirect_host: localhost
+  #     redirect_port: 27890
+
+  # C. Pipeboard (third-party, approved Meta app). Token in the URL.
+  # meta_ads:
+  #   url: "https://meta-ads.mcp.pipeboard.co/?token=${PIPEBOARD_API_TOKEN}"
+
+  # Optional: snapshots for the dashboard
+  supabase:
+    url: "https://mcp.supabase.com/mcp"
+    headers:
+      Authorization: "Bearer ${SUPABASE_ACCESS_TOKEN}"
