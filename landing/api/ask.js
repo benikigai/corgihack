@@ -9,17 +9,29 @@ const QUESTIONS = {
 };
 const READ_TOOLS = ["ads_get_ad_accounts", "ads_get_ad_entities", "ads_get_ad_videos", "ads_get_creatives", "ads_insights_performance_trend"];
 
+async function facts() {
+  const act = process.env.META_AD_ACCOUNT_ID, tok = process.env.META_ACCESS_TOKEN;
+  const get = (path, p) => fetch(`https://graph.facebook.com/v26.0/${path}?${new URLSearchParams({ ...p, access_token: tok })}`).then((r) => r.json());
+  const [a, t] = await Promise.all([
+    get(act, { fields: "amount_spent,currency" }),
+    get(`${act}/insights`, { fields: "spend,impressions,clicks", date_preset: "today" }),
+  ]);
+  const d = t.data?.[0] || {};
+  return `Spend facts from the Graph API (authoritative): total spent all time $${(Number(a.amount_spent || 0) / 100).toFixed(2)}; today $${Number(d.spend || 0).toFixed(2)}, ${d.impressions || 0} impressions, ${d.clicks || 0} clicks. An empty spend field means $0.`;
+}
+
 export default async function handler(req, res) {
   const q = QUESTIONS[req.query.q];
   if (!q) return res.status(400).json({ error: "Unknown question" });
   try {
+    const known = await facts().catch(() => "");
     const response = await client.beta.messages.create({
       model: "claude-sonnet-5-5",
       max_tokens: 4000,
       output_config: { effort: "low" },
       betas: ["mcp-client-2025-11-20", "server-side-fallback-2026-07-01"],
       fallbacks: "default",
-      system: `You are Corgi Ads, a cheerful corgi ad agent. Ad account ${process.env.META_AD_ACCOUNT_ID}. Answer in plain text, short, with one tiny dog pun at most. Only read data; never change anything.`,
+      system: `You are Corgi Ads, a cheerful corgi ad agent. Ad account ${process.env.META_AD_ACCOUNT_ID}. Answer in plain text, short, with one tiny dog pun at most. Only read data; never change anything.\n${known}`,
       mcp_servers: [{ type: "url", url: "https://mcp.facebook.com/ads", name: "meta_ads", authorization_token: process.env.META_ACCESS_TOKEN }],
       tools: [{ type: "mcp_toolset", mcp_server_name: "meta_ads", default_config: { enabled: false },
         configs: Object.fromEntries(READ_TOOLS.map((t) => [t, { enabled: true }])) }],
