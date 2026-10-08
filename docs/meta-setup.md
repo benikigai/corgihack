@@ -20,6 +20,25 @@ Token scopes: `ads_mcp_management`, `ads_management`, `ads_read`, `business_mana
 The old personal ad account `act_1837589724256730` could not be moved into the portfolio
 (Meta wanted a first payment first). It is not used.
 
+## Status (2026-10-08)
+
+- **Muse (our Hermes agent) is connected** to Meta Ads through OAuth, not the system user token.
+  It sees the Corgi Ads ad account, the Page, and the ad set "Corgi Pop - US - Link Clicks".
+- **Reel uploaded** to the ad account: video ID `4104563696511214`, processed and ready.
+- **Blocked:** creating the ad fails because the app is in Development mode. Meta won't run creatives
+  made by a dev-mode app. Fix: switch "Corgi Ads Agent" to Live (see below). Monitoring and pausing
+  are not affected.
+- The system user token was pasted into a chat. Revoke it and generate a new one before using option A.
+
+### Switching the app to Live
+
+developers.facebook.com > Corgi Ads Agent > App settings > Basic: add a Privacy Policy URL, a
+User data deletion URL (or instructions), a category and a 1024x1024 icon. Save, then flip
+App mode to Live. If Meta asks for business verification, use the fallback instead.
+
+Fallback: in Ads Manager, create the ad by hand in that ad set from the uploaded video, leave it
+paused, and let Muse monitor, pause and move budget from there.
+
 ## Open items
 
 - [ ] Assign `act_0000000000000000` to corgi-agent with full access (Business settings > Ad accounts > Assign people). Until then the token sees no ad accounts.
