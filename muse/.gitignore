@@ -1,6 +1,6 @@
 data/
 .env
-node_modules/
+node_modules
 agent-bundle.json
 
 # Local agent credentials
@@ -16,3 +16,6 @@ agent-bundle.json
 .agents/skills/
 .github/skills/
 skills-lock.json
+
+__pycache__/
+*.py[cod]

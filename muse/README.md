@@ -59,6 +59,26 @@ and writes the ignored `agent-bundle.json` into the Docker build context. Always
 run this preparation before a direct `insta deploy`; the image needs the bundle.
 For local development, Muse reads the canonical skill directories directly.
 
+### Live Meta Ads
+
+The **Ads** tab reads the owner's active `metaads` connection from Agent37's
+managed Composio integration. It lists ad accounts, current ads, campaign/ad set
+names, creative previews, and ad-level insights for today, 7 days, or 30 days.
+Active status uses Meta's effective status, including parent campaign/ad set
+pauses; it does not guarantee that Meta is currently delivering impressions.
+Missing metrics display as unreported, never as zero.
+
+`ads.js` installs the versioned `ads-reader.py` on the owner's Agent37 instance.
+That helper calls only `METAADS_GET_OBJECT` and `METAADS_GET_INSIGHTS`, using the
+existing instance credential and selected connection. No Meta access token is
+copied into Muse. The UI offers no ad mutations. Responses are cached for 90
+seconds; Refresh requests a fresh snapshot. The sync time is always shown.
+Pagination follows cursors (up to 10 pages per collection); oversized results
+show a partial-data notice. If insights fail, ad inventory remains available
+with a warning. Expired connections show a reconnect action.
+
+Validate with `npm test` and `python3 -m unittest discover -s test -p 'test_*.py'`.
+
 ### Corgi skills and Monid
 
 The bundled skills are `corgi-ads`, `product-reel`, and the official `monid` skill.

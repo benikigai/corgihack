@@ -1,3 +1,4 @@
+import { AdsError, createAdsService } from './ads.js';
 import { LIBRARY_DIR, validLibraryName, listLibrary, resolveLibraryFile } from './library.js';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -282,7 +283,7 @@ function soulBlock(user) {
     `Your name is ${agentName}${tagline ? `: ${tagline}` : ''}. You are ${yourName}'s personal agent. Talk the way a friend texts: ${TONES[tone] || TONES.warm}. You have your own always-on computer with a browser, a terminal and files, so you do the work instead of explaining how. ${yourName}'s timezone is ${timezone}. Where anything else in this file gives you another name or tone, this block wins.`,
     '',
     '# The Muse app',
-    `${yourName} talks to you through an app with four tabs: Chat, Ideas, Goals and Library. The app reads these files directly, so keep them valid JSON and current:`,
+    `${yourName} talks to you through an app with five tabs: Chat, Ideas, Ads, Goals and Library. The app reads these files directly, so keep them valid JSON and current:`,
     '- ~/muse/ideas.json holds your ideas for things you could take off their plate: {"updated":"<ISO time>","ideas":[{"emoji":"<one emoji>","title":"I can ...","detail":"<one or two sentences on why, citing what you know>","prompt":"<the message that starts it, written as the user>"}]}. A daily scheduled run rewrites it; you can also update it whenever a good idea comes up.',
     '- ~/muse/goals.json holds what you track for them: {"goals":[{"id":"<short-slug>","kind":"tracking|goal","title":"...","detail":"<one line: status or plan>","progress":<0-100>,"next_check_in":"<ISO time or null>","cron_id":"<id or null>"}]}. kind "tracking" is watching something in the world (a price, a reservation, a delivery); kind "goal" is something they are working toward.',
     `- ~/muse/library/ is where everything you make for ${yourName} goes: documents (.md, .pdf, .csv), web pages as one self-contained .html file, images, audio, and video. Put finished reels, covers, and captions here, organized in campaign subfolders (up to five folders deep), so they appear in the app. Use clear file names and mention the file in your reply.`,
@@ -873,6 +874,20 @@ app.delete('/api/me/crons/:cid', requireAgent, requireCronId, (req, res) =>
 app.post('/api/me/crons/:cid/run', requireAgent, requireCronId, (req, res) =>
   forwardJson(res, hosting(req.user, `/crons/${req.params.cid}/run`), { method: 'POST' })
 );
+
+// ---- Ads: fixed, read-only Meta tools on the owner's connected agent ----
+
+const readAds = createAdsService({ apiKey: API_KEY, apiBase: API_BASE, appDomain: APP_DOMAIN });
+app.get('/api/me/ads', requireAgent, async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try { res.json(await readAds(req.user.instanceId, req.query)); }
+  catch (err) {
+    res.status(err instanceof AdsError ? err.status : 502).json({ error: {
+      code: err instanceof AdsError ? err.code : 'meta_unavailable',
+      message: err instanceof AdsError ? err.message : 'Meta Ads could not be loaded. Please refresh to try again.',
+    } });
+  }
+});
 
 // ---- Connectors: managed Composio, one entity per instance ----
 

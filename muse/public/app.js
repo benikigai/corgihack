@@ -270,6 +270,7 @@ function showTab(name) {
   if (name === 'ideas') loadIdeas();
   if (name === 'goals') loadGoals();
   if (name === 'library') loadLibrary();
+  if (name === 'ads') loadAds();
 }
 
 // ---- chat ----
@@ -982,6 +983,209 @@ function goalSheet(goal) {
     body.appendChild(ask);
   });
 }
+
+// ---- Ads: the connected Meta account's inventory and reported performance ----
+
+let adsData = null;
+let adsFilter = 'active';
+let adsRequestId = 0;
+let adsPending = false;
+let adsSelection = { account: '', connection: '', period: 'today' };
+const AD_FILTERS = [['active', 'Active'], ['all', 'All'], ['paused', 'Paused'], ['other', 'Other']];
+const adGroup = (ad) => ad.status === 'ACTIVE' ? 'active' : /PAUSED/.test(ad.status) ? 'paused' : 'other';
+const adStatus = (status) => String(status || 'UNKNOWN').toLowerCase().replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase());
+const reportedNumber = (value) => typeof value === 'number' && Number.isFinite(value);
+function adMetric(value, kind = 'number') {
+  if (!reportedNumber(value)) return '—';
+  if (kind === 'money') {
+    try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: adsData.account.currency }).format(value); }
+    catch { return `${value.toFixed(2)} ${adsData.account.currency || ''}`.trim(); }
+  }
+  if (kind === 'percent') return `${value.toFixed(2)}%`;
+  return new Intl.NumberFormat().format(value);
+}
+function metaAdUrl(ad) {
+  return `https://adsmanager.facebook.com/adsmanager/manage/ads?${new URLSearchParams({ act: adsData.account.id.replace(/^act_/, ''), selected_ad_ids: ad.id })}`;
+}
+function adImage(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'https:' && !parsed.username && !parsed.password && !parsed.searchParams.has('access_token')) return parsed.href;
+  } catch {}
+  return '';
+}
+function adsNotice(message, connect = false) {
+  const box = h('div', 'ads-notice', `<p>${esc(message)}</p>`);
+  if (connect) {
+    const button = h('button', 'pill', 'Connect Meta Ads');
+    button.addEventListener('click', connectMetaAds);
+    box.appendChild(button);
+  }
+  $('#ads-message').replaceChildren(box);
+}
+async function connectMetaAds() {
+  const popup = window.open('', '_blank');
+  try {
+    const result = await api.post('/api/me/integrations/connect', { toolkit: 'metaads' });
+    if (popup) popup.location = result.redirectUrl;
+    else location.href = result.redirectUrl;
+    adsNotice('Finish connecting in the new tab, then return here and refresh.');
+  } catch (error) { popup?.close(); adsNotice(error.message); }
+}
+function setAdsOptions(selector, items, selected) {
+  const select = $(selector);
+  select.replaceChildren(...items.map((item) => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = item.name || item.id;
+    option.selected = item.id === selected;
+    return option;
+  }));
+}
+function renderAds() {
+  const data = adsData;
+  $('#ads-controls').hidden = !data?.account;
+  $('#ads-footnote').hidden = !data?.account;
+  const list = $('#ads-list');
+  list.replaceChildren();
+  $('#ads-message').replaceChildren();
+  if (data.connection_required) {
+    adsNotice('Connect your Meta Ads account to see your active ads and their performance.', true);
+    return;
+  }
+  if (!data.account) {
+    adsNotice('Meta is connected, but no ad accounts are available. Check that your Meta connection has access to the ad account.', true);
+    return;
+  }
+  setAdsOptions('#ads-account', data.accounts, data.account.id);
+  setAdsOptions('#ads-connection', data.connections, data.connection_id);
+  $('#ads-connection-field').hidden = data.connections.length <= 1;
+  const filters = $('#ads-filters');
+  filters.replaceChildren();
+  for (const [key, label] of AD_FILTERS) {
+    const count = data.ads.filter((ad) => key === 'all' || adGroup(ad) === key).length;
+    const button = h('button', key === adsFilter ? 'on' : '', `${label}<span>${count}</span>`);
+    button.setAttribute('aria-label', `${label} ads (${count})`);
+    button.setAttribute('aria-pressed', String(key === adsFilter));
+    button.addEventListener('click', () => { adsFilter = key; renderAds(); });
+    filters.appendChild(button);
+  }
+  const query = $('#ads-search').value.trim().toLowerCase();
+  const ads = data.ads.filter((ad) => (adsFilter === 'all' || adGroup(ad) === adsFilter)
+    && [ad.name, ad.campaign.name, ad.adset.name].some((text) => text.toLowerCase().includes(query)));
+  const sum = (key) => ads.length && ads.every((ad) => reportedNumber(ad.metrics[key]))
+    ? ads.reduce((total, ad) => total + ad.metrics[key], 0) : null;
+  $('#ads-summary').innerHTML = [['Spend', sum('spend'), 'money'], ['Impressions', sum('impressions')], ['Clicks', sum('clicks')]]
+    .map(([label, value, kind]) => `<div><span>${label}</span><strong>${esc(adMetric(value, kind))}</strong></div>`).join('');
+  const period = $('#ads-period').selectedOptions[0].textContent;
+  $('#ads-updated').textContent = `${ads.length} ${ads.length === 1 ? 'ad' : 'ads'} shown · ${period} · Synced ${new Date(data.updated_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+  const warnings = [...(data.warnings || [])];
+  if (data.partial) warnings.push('This is a partial result for a large account. Open Meta Ads Manager for the complete view.');
+  if (data.account.account_status !== 1) warnings.push('This ad account is not marked active by Meta. Check its status in Ads Manager.');
+  if (warnings.length) adsNotice(warnings.join(' '));
+  if (!ads.length) {
+    const empty = h('div', 'library-empty', `<h2>${query ? 'No matching ads' : adsFilter === 'active' ? 'No active ads right now' : 'No ads in this view'}</h2><p>${query ? 'Try another ad or campaign name.' : 'Choose All to see other ad statuses, or refresh after making changes in Meta.'}</p>`);
+    if (adsFilter !== 'all' || query) {
+      const clear = h('button', 'pill', 'Show all ads');
+      clear.addEventListener('click', () => { adsFilter = 'all'; $('#ads-search').value = ''; renderAds(); });
+      empty.appendChild(clear);
+    }
+    list.appendChild(empty);
+    return;
+  }
+  for (const ad of ads) {
+    const card = h('article', 'ad-card');
+    const preview = h('button', 'ad-preview');
+    preview.setAttribute('aria-label', `View ad ${ad.name}`);
+    const visual = h('span', 'ad-artwork', mediaIcon(ad.creative.format === 'Video' ? 'video' : 'image'));
+    const image = adImage(ad.creative.image_url);
+    if (image) {
+      const img = Object.assign(h('img'), { src: image, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer' });
+      img.addEventListener('error', () => img.remove(), { once: true });
+      visual.appendChild(img);
+    }
+    const info = h('span', 'ad-title', `<span class="ad-status ${adGroup(ad)}">${esc(adStatus(ad.status))}</span><strong>${esc(ad.name)}</strong><span>${esc(ad.campaign.name || 'Campaign unavailable')}</span><small>${esc(ad.creative.format)}</small>`);
+    preview.append(visual, info);
+    preview.addEventListener('click', () => adSheet(ad));
+    card.appendChild(preview);
+    if (ad.creative.body) card.appendChild(h('p', 'ad-copy', esc(ad.creative.body)));
+    const metrics = h('div', 'ad-metrics', [['Spend', 'spend', 'money'], ['Impressions', 'impressions'], ['Clicks', 'clicks'], ['CTR', 'ctr', 'percent']]
+      .map(([label, key, kind]) => `<div><span>${label}</span><strong>${esc(adMetric(ad.metrics[key], kind))}</strong></div>`).join(''));
+    card.appendChild(metrics);
+    if (!ad.has_insights) card.appendChild(h('p', 'ad-unreported', 'Performance not reported for this period yet.'));
+    const actions = h('div', 'ad-actions');
+    const details = h('button', 'link', 'View details');
+    details.addEventListener('click', () => adSheet(ad));
+    const link = h('a', 'link', 'Open in Meta ↗');
+    Object.assign(link, { href: metaAdUrl(ad), target: '_blank', rel: 'noopener noreferrer' });
+    actions.append(details, link);
+    card.appendChild(actions);
+    list.appendChild(card);
+  }
+}
+function adSheet(ad) {
+  openSheet('Ad details', (body) => {
+    const image = adImage(ad.creative.image_url);
+    if (image) {
+      const img = Object.assign(h('img', 'preview-img'), { src: image, alt: `${ad.name} creative preview`, referrerPolicy: 'no-referrer' });
+      img.addEventListener('error', () => img.replaceWith(h('p', 'muted', 'Creative preview is unavailable. Open the ad in Meta.')), { once: true });
+      body.appendChild(img);
+    }
+    body.appendChild(h('h3', 'ad-detail-title', esc(ad.name)));
+    body.appendChild(h('span', `ad-status ${adGroup(ad)}`, esc(adStatus(ad.status))));
+    if (ad.creative.title) body.appendChild(h('h4', '', esc(ad.creative.title)));
+    if (ad.creative.body) body.appendChild(h('p', 'ad-detail-copy', esc(ad.creative.body)));
+    const details = h('dl', 'ad-details');
+    for (const [label, value] of [
+      ['Campaign', ad.campaign.name], ['Ad set', ad.adset.name], ['Ad ID', ad.id],
+      ['Account', adsData.account.name], ['Reporting timezone', adsData.account.timezone_name],
+      ['Period', ad.date_start ? `${ad.date_start} to ${ad.date_stop}` : $('#ads-period').selectedOptions[0].textContent],
+      ['Spend', adMetric(ad.metrics.spend, 'money')], ['Impressions', adMetric(ad.metrics.impressions)],
+      ['Clicks', adMetric(ad.metrics.clicks)], ['CTR', adMetric(ad.metrics.ctr, 'percent')], ['CPC', adMetric(ad.metrics.cpc, 'money')],
+    ]) details.append(h('dt', '', esc(label)), h('dd', '', esc(value || 'Not reported')));
+    body.appendChild(details);
+    const link = h('a', 'primary media-download', 'Open in Meta Ads Manager ↗');
+    Object.assign(link, { href: metaAdUrl(ad), target: '_blank', rel: 'noopener noreferrer' });
+    body.appendChild(link);
+  });
+}
+async function loadAds(refresh = false) {
+  const requestId = ++adsRequestId;
+  adsPending = true;
+  $('#ads-refresh').disabled = true;
+  $('#ads-list').setAttribute('aria-busy', 'true');
+  const selection = { ...adsSelection };
+  if (!adsData) {
+    $('#ads-list').innerHTML = '<p class="ads-loading">Reading your Meta ads…</p><div class="skeleton"></div><div class="skeleton"></div>';
+    $('#ads-summary').replaceChildren();
+    $('#ads-updated').textContent = 'Reading Meta…';
+    $('#ads-message').replaceChildren();
+    $('#ads-footnote').hidden = true;
+  }
+  try {
+    const data = await api.get(`/api/me/ads?${new URLSearchParams({ ...selection, refresh: refresh ? '1' : '0' })}`);
+    if (requestId !== adsRequestId) return;
+    adsData = data;
+    adsSelection.account = data.account?.id || '';
+    adsSelection.connection = data.connection_id || '';
+    renderAds();
+  } catch (error) {
+    if (requestId !== adsRequestId) return;
+    if (!adsData) $('#ads-list').replaceChildren();
+    adsNotice(`${adsData ? 'Refresh failed; the previous snapshot is still shown. ' : ''}${error.message}`, ['reconnect_required', 'permission_required'].includes(error.code));
+  } finally {
+    if (requestId === adsRequestId) {
+      adsPending = false;
+      $('#ads-refresh').disabled = false;
+      $('#ads-list').setAttribute('aria-busy', 'false');
+    }
+  }
+}
+$('#ads-refresh').addEventListener('click', () => loadAds(true));
+$('#ads-account').addEventListener('change', (event) => { adsSelection.account = event.target.value; adsData = null; loadAds(); });
+$('#ads-connection').addEventListener('change', (event) => { adsSelection.connection = event.target.value; adsSelection.account = ''; adsData = null; loadAds(); });
+$('#ads-period').addEventListener('change', (event) => { adsSelection.period = event.target.value; adsData = null; loadAds(); });
+$('#ads-search').addEventListener('input', () => { if (adsData && !adsPending) renderAds(); });
 
 // ---- Library: browse the media and files the agent has made ----
 

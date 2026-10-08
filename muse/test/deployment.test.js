@@ -83,6 +83,8 @@ test('private access, callbacks, shared identity, and persistence across a resta
   const cookie = setCookie.split(';')[0];
   assert.equal((await request('/', { headers: { cookie } })).status, 200);
   assert.equal((await request('/api/me/library')).status, 401);
+  assert.equal((await request('/api/me/ads')).status, 401);
+  assert.equal((await request('/api/me/ads?period=invalid', { headers: { cookie } })).status, 400);
   const library = await (await request('/api/me/library', { headers: { cookie } })).json();
   assert.deepEqual(library.data.map((f) => f.name), ['ad.mp4']);
   const media = await request('/api/me/library/file?name=ad.mp4', { headers: { cookie, Range: 'bytes=2-5' } });
