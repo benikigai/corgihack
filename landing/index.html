@@ -366,7 +366,7 @@
     try {
       const d = await (await fetch(`/api/preview?hook=${sel.hook}&format=${sel.format}`)).json();
       if (!d.src) throw 0;
-      $("pv-frame").src = d.src; $("pv-frame").onload = () => (msg.style.display = "none");
+      msg.textContent = "Meta is drawing the preview… ~15s 🐾"; $("pv-frame").src = d.src; $("pv-frame").onload = () => setTimeout(() => (msg.style.display = "none"), 12000);
     } catch { msg.textContent = "Preview unavailable right now."; }
   }
   document.querySelectorAll(".seg").forEach((g) => g.addEventListener("click", (e) => {
