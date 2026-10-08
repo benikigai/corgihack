@@ -1,8 +1,8 @@
 // Meta's own feed preview of a Corgi Pop ad, rendered from a spec. Creates nothing, spends nothing.
 const HOOKS = {
-  zoomies: { video: "1134985222431889", message: "Your corgi called. It wants a Corgi Pop. 🐕", title: "Fizz worth zooming for" },
-  "beat-heat": { video: "1082556491186206", message: "Too hot for walkies? Crack a cold one. 🧊", title: "Ice cold. Corgi approved." },
-  "taste-test": { video: "2710086982745146", message: "We asked a corgi to taste test soda. 🥤", title: "Verdict: 10/10 boops" },
+  zoomies: { video: "1857550775267068", message: "Your corgi called. It wants a Corgi Pop. 🐕", title: "Fizz worth zooming for" },
+  "beat-heat": { video: "26993763410321519", message: "Too hot for walkies? Crack a cold one. 🧊", title: "Ice cold. Corgi approved." },
+  "taste-test": { video: "1431281109189316", message: "We asked a corgi to taste test soda. 🥤", title: "Verdict: 10/10 boops" },
 };
 const FORMATS = { instagram: "INSTAGRAM_STANDARD", facebook: "MOBILE_FEED_STANDARD", reels: "INSTAGRAM_REELS" };
 
