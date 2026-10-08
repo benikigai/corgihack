@@ -2,6 +2,43 @@
 
 State of the Meta side as of 2026-10-07. IDs below are not secrets. The token is.
 
+## Quick links
+
+Built from the IDs below. You need a role on the business to open everything except the Ad Library.
+
+**Public proof (anyone can open, no login)**
+- [Meta Ad Library: all Corgi Ads ads](https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=US&view_all_page_id=0000000000000000): every ad the Page has run. An ad shows up here once it has been active, not while it is a draft or paused before launch.
+- [Corgi Ads Facebook Page](https://www.facebook.com/0000000000000000)
+
+**Ads Manager** (ad account `act_0000000000000000`)
+- [Campaigns](https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=0000000000000000&business_id=1754690242426999)
+- [Ad sets](https://adsmanager.facebook.com/adsmanager/manage/adsets?act=0000000000000000&business_id=1754690242426999)
+- [Ads](https://adsmanager.facebook.com/adsmanager/manage/ads?act=0000000000000000&business_id=1754690242426999)
+- [Billing and payment methods](https://business.facebook.com/billing_hub/accounts/details?asset_id=0000000000000000&business_id=1754690242426999)
+
+**Business settings** (portfolio `1754690242426999`)
+- [Business Suite home](https://business.facebook.com/latest/home?business_id=1754690242426999)
+- [Business settings](https://business.facebook.com/latest/settings/?business_id=1754690242426999)
+- [People](https://business.facebook.com/latest/settings/business_users?business_id=1754690242426999) · [System users](https://business.facebook.com/latest/settings/system_users?business_id=1754690242426999) · [Ad accounts](https://business.facebook.com/latest/settings/ad_accounts?business_id=1754690242426999) · [Apps](https://business.facebook.com/latest/settings/apps?business_id=1754690242426999)
+
+**Developer app** (Corgi Ads Agent `0000000000000000`)
+- [App dashboard](https://developers.facebook.com/apps/0000000000000000/dashboard/)
+- [App settings > Basic](https://developers.facebook.com/apps/0000000000000000/settings/basic/): privacy policy, icon, App mode toggle (Live)
+- [App roles](https://developers.facebook.com/apps/0000000000000000/roles/roles/)
+- [Access token debugger](https://developers.facebook.com/tools/debug/accesstoken/): check a token's scopes and expiry. Meta's own tool, fine for tokens.
+
+## Proving the campaign ran
+
+Judges can't open Ads Manager, so collect proof that doesn't need a login:
+
+1. **Ad Library link** (above): public and live once the ad has delivered. Strongest proof.
+2. **Ad preview link**: Ads Manager > select the ad > Preview > Share > copy link. Anyone can open it.
+3. **Screenshots**: Ads Manager rows showing campaign, ad set and ad IDs, status Active, delivery, and spend > $0.
+4. **Pip's own report**: its insights read (spend, impressions, CTR) next to the same numbers in Ads Manager.
+
+As of 2026-10-08: campaign "Corgi Pop - Website Visits Test" and ad set "Corgi Pop - US - Link Clicks"
+exist, but the ad set has **no ads** and $0 spent. Nothing is provable until an ad exists and delivers.
+
 ## What exists
 
 | Thing | Value | Notes |
