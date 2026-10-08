@@ -1,3 +1,10 @@
 {
-  "functions": { "api/chat.js": { "maxDuration": 120 } }
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 120
+    },
+    "api/ask.js": {
+      "maxDuration": 60
+    }
+  }
 }
