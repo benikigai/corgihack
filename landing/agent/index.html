@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corgi Ads Agent</title>
+<link rel="icon" href="/favicon.png">
+<style>
+  :root { --bg:#fff6ea; --card:#ffffff; --ink:#3a2418; --muted:#7a5c4c; --accent:#e8754a; --me:#ffe1cc; --line:rgba(120,60,20,.15); }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1f1510; --card:#2a1d16; --ink:#fbeee3; --muted:#c9ab98; --me:#4a2e20; --line:rgba(255,220,200,.12); } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,sans-serif; }
+  .app { max-width:720px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; padding:0 16px; }
+  header { display:flex; align-items:center; gap:12px; padding:16px 0; border-bottom:1px solid var(--line); }
+  header img { width:48px; height:48px; border-radius:50%; }
+  header b { display:block; font-size:18px; }
+  header span { color:var(--muted); font-size:13px; }
+  #log { flex:1; padding:16px 0; display:flex; flex-direction:column; gap:12px; }
+  .msg { max-width:85%; padding:12px 14px; border-radius:16px; white-space:pre-wrap; line-height:1.45; font-size:15px; }
+  .bot { background:var(--card); align-self:flex-start; border-bottom-left-radius:4px; }
+  .me { background:var(--me); align-self:flex-end; border-bottom-right-radius:4px; }
+  .tools { display:block; margin-top:6px; color:var(--muted); font-size:12px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { background:var(--card); border:1px solid var(--line); color:var(--ink); border-radius:999px; padding:8px 12px; font-size:13px; cursor:pointer; }
+  form { display:flex; gap:8px; padding:12px 0 20px; position:sticky; bottom:0; background:var(--bg); }
+  input { flex:1; min-width:0; padding:14px 16px; border-radius:999px; border:2px solid var(--accent); background:var(--card); color:var(--ink); font-size:16px; }
+  button { background:var(--accent); color:#fff; border:0; border-radius:999px; padding:0 20px; font-weight:600; font-size:15px; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  #gate { display:none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <img src="/corgi-ads.jpg" alt="Corgi Ads mascot">
+    <div><b>Corgi Ads Agent</b><span>Researches, creates, launches, and tracks Corgi Pop ads on Meta.</span></div>
+  </header>
+  <div id="log">
+    <div class="msg bot">Woof. I run the Corgi Pop ads: research what's working, make the ad, launch it, and watch the spend. What should we do?</div>
+    <div class="chips">
+      <button class="chip">What ad accounts can you see?</button>
+      <button class="chip">How much have we spent today?</button>
+      <button class="chip">Which ad is doing best?</button>
+      <button class="chip">Find top Instagram ads for drinks like ours</button>
+    </div>
+  </div>
+  <form id="gate"><input id="pass" type="password" placeholder="Team passcode" aria-label="Team passcode" autocomplete="current-password"><button>Unlock</button></form>
+  <form id="chat"><input id="q" placeholder="Ask the agent…" aria-label="Message" autocomplete="off"><button id="send">Send</button></form>
+</div>
+<script>
+  const log = document.getElementById("log"), q = document.getElementById("q"), send = document.getElementById("send");
+  const gate = document.getElementById("gate"), chat = document.getElementById("chat");
+  const history = [];
+  let pass = "";
+  try { pass = sessionStorage.getItem("agentPass") || ""; } catch {}
+  function add(role, text, tools) {
+    const d = document.createElement("div");
+    d.className = "msg " + (role === "user" ? "me" : "bot");
+    d.textContent = text;
+    if (tools && tools.length) { const t = document.createElement("span"); t.className = "tools"; t.textContent = "Checked: " + [...new Set(tools)].join(", "); d.appendChild(t); }
+    log.appendChild(d); d.scrollIntoView({ behavior: "smooth", block: "end" });
+    return d;
+  }
+  function showGate(show) { gate.style.display = show ? "flex" : "none"; chat.style.display = show ? "none" : "flex"; }
+  async function ask(text) {
+    if (!text.trim()) return;
+    if (!pass) { showGate(true); return; }
+    add("user", text); history.push({ role: "user", content: text });
+    q.value = ""; send.disabled = true;
+    const wait = add("bot", "Sniffing the ad account…");
+    try {
+      const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json", "x-agent-passcode": pass }, body: JSON.stringify({ messages: history }) });
+      const data = await r.json();
+      wait.remove();
+      if (r.status === 401) { history.pop(); pass = ""; try { sessionStorage.removeItem("agentPass"); } catch {} add("bot", "Wrong passcode. Enter it again."); showGate(true); return; }
+      if (!r.ok) { history.pop(); add("bot", data.error || "Something went wrong."); return; }
+      add("assistant", data.reply, data.tools); history.push({ role: "assistant", content: data.reply });
+    } catch { wait.remove(); history.pop(); add("bot", "Couldn't reach the agent."); }
+    finally { send.disabled = false; q.focus(); }
+  }
+  chat.addEventListener("submit", (e) => { e.preventDefault(); ask(q.value); });
+  gate.addEventListener("submit", (e) => { e.preventDefault(); pass = document.getElementById("pass").value; try { sessionStorage.setItem("agentPass", pass); } catch {} showGate(false); });
+  document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => ask(c.textContent)));
+  showGate(!pass);
+</script>
+</body>
+</html>

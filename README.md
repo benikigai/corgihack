@@ -6,6 +6,18 @@ money should go. You approve; it acts.
 
 Built at the Corgi Hackathon by Ben and Zen.
 
+## Live links
+
+| What | URL |
+|---|---|
+| Demo page | https://corgi-hack-tau.vercel.app |
+| Corgi Pop landing page (ad click-through) | https://corgi-hack-tau.vercel.app/corgi-pop/ |
+| Agent console (Claude + Meta ads MCP, passcode) | https://corgi-hack-tau.vercel.app/agent/ |
+| Muse agent (Agent37 on Instacloud, password) | https://prod-muse-instacloud-muse-07ee54-007x05v54jj.compute.instacloud-edge.com |
+
+**Vercel:** project `benjamin-shyong/corgi-hack`, site code in `landing/`, deployed from branch
+**`ben/meta-setup`**. To deploy: `cd landing && vercel deploy --prod --scope benjamin-shyong`.
+
 ## Architecture
 
 ```mermaid
@@ -47,6 +59,7 @@ hermes/
   skills/marketing/product-reel/  Product photos → reel, cover, caption + media checks
 supabase/schema.sql            Shared data contract (agent writes, web reads)
 web/                           Dashboard
+muse/                          Private Muse chat app, deployed on Instacloud
 docs/demo.md                   3-minute demo script and backups
 .env.example                   Every secret we need. Real values never get committed.
 ```
@@ -65,6 +78,30 @@ Proposed split. Swap freely, just update this table.
 | Demo script + backup recording | Both | See `docs/demo.md` |
 
 ## Setup
+
+**Muse chat app (Instacloud)**
+
+The working agent UI lives in [`muse/`](muse/README.md). It includes chat, Ideas,
+Goals, Library, password sign-in, and an in-app Skills screen. The existing
+Instacloud deployment and Pip instance are reused; moving the source here does
+not reset the agent or its memory.
+
+From `muse/`, run `npm ci`, `npm test`, then `npm run deploy`. Deployment bundles
+the canonical files in `hermes/skills`, including `corgi-ads`, `product-reel`, and
+the official `monid` skill, plus their scripts and references. New agents install
+them during onboarding; existing agents sync them on their next app visit. The
+Skills screen also offers a refresh button. Start a new chat after a skill update.
+
+Set `MONID_API_KEY` as an Instacloud secret scoped to `compute/muse`. Muse installs
+the Monid CLI in the agent's persistent home and configures its local credential
+store automatically. The key is supplied by the deployment, not committed in git
+or sent to the browser. Monid research/generation bills to the Monid workspace.
+
+Muse itself uses its persistent `/data/store.json` and needs no database. The
+Supabase schema below is for shared ad data and the separate dashboard. Installing
+the Corgi Ads skill does not connect Meta or Supabase: complete the relevant setup
+below before asking Pip to operate ads. No ad campaign or monitor is launched by
+deploying Muse.
 
 **Meta access** (people get roles, the agent gets a system user)
 
