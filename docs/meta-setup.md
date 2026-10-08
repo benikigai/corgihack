@@ -62,19 +62,34 @@ The old personal ad account `act_1837589724256730` could not be moved into the p
 - **Muse (our Hermes agent) is connected** to Meta Ads through OAuth, not the system user token.
   It sees the Corgi Ads ad account, the Page, and the ad set "Corgi Pop - US - Link Clicks".
 - **Reel uploaded** to the ad account: video ID `4104563696511214`, processed and ready.
-- **Blocked:** creating the ad fails because the app is in Development mode. Meta won't run creatives
-  made by a dev-mode app. Fix: switch "Corgi Ads Agent" to Live (see below). Monitoring and pausing
-  are not affected.
+- **Blocked:** creating the ad fails with "app is in development mode". Muse connects to Meta through
+  Agent37's managed Composio connector (`muse/server.js`, "Connectors"), so the app named in that
+  error is most likely Composio's Meta app, not ours. Flipping Corgi Ads Agent to Live alone may not
+  fix Pip. Reads, pausing and budget edits are not affected.
 - The system user token was pasted into a chat. Revoke it and generate a new one before using option A.
 
-### Switching the app to Live
+### Getting ad creation working
 
-developers.facebook.com > Corgi Ads Agent > App settings > Basic: add a Privacy Policy URL, a
-User data deletion URL (or instructions), a category and a 1024x1024 icon. Save, then flip
-App mode to Live. If Meta asks for business verification, use the fallback instead.
+**Path 1, fastest (no Meta review):** in Ads Manager, open ad set "Corgi Pop - US - Link Clicks",
+create the ad from the uploaded video `4104563696511214`, leave it paused. Pip monitors, pauses and
+moves budget through Composio. Story: "the agent made the reel and runs the spend."
 
-Fallback: in Ads Manager, create the ad by hand in that ad set from the uploaded video, leave it
-paused, and let Muse monitor, pause and move budget from there.
+**Path 2, agent creates ads itself:** put Corgi Ads Agent in Live mode, then connect Pip to Meta
+through our app instead of Composio (option A in `hermes/config.mcp.yaml`, a new system user token
+in `~/.hermes/.env` on the Pip box, then `/reload-mcp`).
+
+Putting Corgi Ads Agent in Live mode
+([App settings > Basic](https://developers.facebook.com/apps/0000000000000000/settings/basic/)):
+
+| Field | Value |
+|---|---|
+| Privacy Policy URL | https://github.com/benikigai/corgihack/blob/claude/trusting-euler-74gfxd/docs/privacy.md |
+| User data deletion | Data deletion instructions URL: same URL + `#data-deletion` |
+| App icon (1024x1024) | [`docs/assets/app-icon-1024.png`](assets/app-icon-1024.png) |
+| Category | Business and pages |
+
+Save, then flip **App mode** to **Live** at the top of the dashboard. If Meta asks for business
+verification, stop: that takes days. Use path 1.
 
 ## Open items
 
