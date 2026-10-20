@@ -16,11 +16,11 @@ Deploy: `cd landing && vercel deploy --prod --scope benjamin-shyong`
 
 ## Agent chat (`/agent` + `api/chat.js`)
 
-The portal for talking to the ads agent. All requests need the `x-agent-passcode` header (`AGENT_PASSCODE`).
+The portal for talking to the ads agent. All requests need the `x-agent-passcode` header (`AGENT_PASSCODE`), compared in constant time; an IP is locked out for 15 minutes after 5 wrong passcodes (best effort, per warm instance).
 
-- **Muse mode** (target): set `MUSE_AGENT_URL` (and `MUSE_AGENT_TOKEN` if Muse needs one). The function forwards
-  `POST {"messages":[{"role":"user"|"assistant","content":"..."}]}` and expects `{"reply":"...","tools":["..."]}` back.
-  Zen's Muse agent owns Monid research, creative, and Meta.
-- **Fallback mode** (until Muse is ready): Claude (claude-sonnet-5-5) + Meta's ads MCP server with every tool enabled.
-  Needs `ANTHROPIC_API_KEY`, `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`. Spending rules ($20 cap,
-  confirm before publish) are in the system prompt only, so also keep an account spending limit in Meta Billing.
+- **Read-only (default):** Claude (claude-sonnet-5-5) + Meta's ads MCP server with only the read tools enabled server-side
+  (`ads_get_ad_accounts`, `ads_get_ad_entities`, `ads_get_ad_videos`, `ads_get_creatives`, `ads_insights_performance_trend`).
+  It can explain spend and performance but cannot publish, pause, or change budgets.
+- **Live-demo writes:** set `AGENT_ALLOW_WRITES=true` to enable every Meta tool and, if `MUSE_AGENT_URL` is set, forward chats to
+  Zen's Muse agent (which owns Monid research, creative, and Meta). Spending rules ($20 cap, confirm before publish) are prompt-only,
+  so keep an account spending limit in Meta Billing and turn writes off again after the demo.
